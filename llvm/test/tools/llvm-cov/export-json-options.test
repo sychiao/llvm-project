@@ -1,0 +1,14 @@
+# Check that streaming complete JSON documents preserves data under export flags.
+# Include nested expansions and MC/DC, and check deterministic thread output.
+
+# RUN: llvm-profdata merge %S/Inputs/branch-macros.proftext -o %t.profdata
+# RUN: llvm-cov export %S/Inputs/branch-macros.o32l -instr-profile=%t.profdata -num-threads=1 > %t.full.json
+# RUN: llvm-cov export %S/Inputs/branch-macros.o32l -instr-profile=%t.profdata -num-threads=2 > %t.threaded.json
+# RUN: diff %t.full.json %t.threaded.json
+# RUN: llvm-cov export %S/Inputs/branch-macros.o32l -instr-profile=%t.profdata -skip-expansions > %t.no-expansions.json
+# RUN: llvm-cov export %S/Inputs/branch-macros.o32l -instr-profile=%t.profdata -skip-functions > %t.no-functions.json
+# RUN: llvm-cov export %S/Inputs/branch-macros.o32l -instr-profile=%t.profdata -summary-only > %t.summary.json
+# RUN: llvm-cov export %S/Inputs/branch-macros.o32l -instr-profile=%t.profdata -ignore-filename-regex='.*' > %t.empty.json
+# RUN: llvm-profdata merge %S/Inputs/mcdc-general.proftext -o %t.mcdc.profdata
+# RUN: llvm-cov export %S/Inputs/mcdc-general.o -instr-profile=%t.mcdc.profdata > %t.mcdc.json
+# RUN: %python %S/Inputs/check-export-json.py %t.full.json %t.no-expansions.json %t.no-functions.json %t.summary.json %t.empty.json %t.mcdc.json
