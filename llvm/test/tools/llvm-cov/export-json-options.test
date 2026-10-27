@@ -1,4 +1,4 @@
-# Check that streaming complete JSON documents preserves data under export flags.
+# Check that complete JSON documents preserve data under export flags.
 # Include nested expansions and MC/DC, and check deterministic thread output.
 
 # RUN: llvm-profdata merge %S/Inputs/branch-macros.proftext -o %t.profdata

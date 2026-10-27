@@ -83,6 +83,8 @@ CoveragePrinter::create(const CoverageViewOptions &Opts) {
     if (Opts.ShowDirectoryCoverage)
       return std::make_unique<CoveragePrinterHTMLDirectory>(Opts);
     return std::make_unique<CoveragePrinterHTML>(Opts);
+  case CoverageViewOptions::OutputFormat::JsonStream:
+    llvm_unreachable("JSON streaming is only supported by llvm-cov export!");
   case CoverageViewOptions::OutputFormat::Lcov:
     // Unreachable because CodeCoverage.cpp should terminate with an error
     // before we get here.
@@ -153,6 +155,8 @@ SourceCoverageView::create(StringRef SourceName, const MemoryBuffer &File,
   case CoverageViewOptions::OutputFormat::HTML:
     return std::make_unique<SourceCoverageViewHTML>(
         SourceName, File, Options, std::move(CoverageInfo));
+  case CoverageViewOptions::OutputFormat::JsonStream:
+    llvm_unreachable("JSON streaming is only supported by llvm-cov export!");
   case CoverageViewOptions::OutputFormat::Lcov:
     // Unreachable because CodeCoverage.cpp should terminate with an error
     // before we get here.

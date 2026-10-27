@@ -522,7 +522,13 @@ OPTIONS
 .. option:: -format=<FORMAT>
 
  Use the specified output format. The supported formats are: "text" (JSON),
- "lcov".
+ "json-stream" (streaming JSON), "lcov". The default is "text".
+
+ "json-stream" produces the same JSON schema as "text", but writes files,
+ functions, and their nested arrays incrementally instead of constructing the
+ complete JSON document in memory. Coverage mapping and summary computation
+ still run before the detailed output is written. This format is supported only
+ by :program:`llvm-cov export`.
 
 .. option:: -summary-only
 
@@ -547,7 +553,9 @@ OPTIONS
 .. option:: -num-threads=N, -j=N
 
  Use N threads to export coverage data. When N=0, llvm-cov auto-detects an
- appropriate number of threads to use. This is the default.
+ appropriate number of threads to use. This is the default. With "json-stream",
+ this controls summary computation; file detail preparation and JSON emission
+ are serial to bound memory use.
 
 .. option:: -compilation-dir=<dir>
 

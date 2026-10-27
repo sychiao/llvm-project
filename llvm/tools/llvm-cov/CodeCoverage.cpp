@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "CoverageExporterJson.h"
+#include "CoverageExporterJsonStream.h"
 #include "CoverageExporterLcov.h"
 #include "CoverageFilters.h"
 #include "CoverageReport.h"
@@ -701,7 +702,10 @@ int CodeCoverageTool::run(Command Cmd, int argc, const char **argv) {
                  clEnumValN(CoverageViewOptions::OutputFormat::HTML, "html",
                             "HTML output"),
                  clEnumValN(CoverageViewOptions::OutputFormat::Lcov, "lcov",
-                            "lcov tracefile output")),
+                            "lcov tracefile output"),
+                 clEnumValN(CoverageViewOptions::OutputFormat::JsonStream,
+                            "json-stream",
+                            "Streaming JSON output (export only)")),
       cl::init(CoverageViewOptions::OutputFormat::Text));
 
   cl::list<std::string> PathRemaps(
@@ -847,6 +851,12 @@ int CodeCoverageTool::run(Command Cmd, int argc, const char **argv) {
       if (UseColor == cl::BOU_FALSE)
         errs() << "Color output cannot be disabled when generating html.\n";
       ViewOpts.Colors = true;
+      break;
+    case CoverageViewOptions::OutputFormat::JsonStream:
+      if (UseColor == cl::BOU_TRUE)
+        errs()
+            << "Color output cannot be enabled when generating json-stream.\n";
+      ViewOpts.Colors = false;
       break;
     case CoverageViewOptions::OutputFormat::Lcov:
       if (UseColor == cl::BOU_TRUE)
@@ -1062,6 +1072,11 @@ int CodeCoverageTool::doShow(int argc, const char **argv,
   if (Err)
     return Err;
 
+  if (ViewOpts.Format == CoverageViewOptions::OutputFormat::JsonStream) {
+    error("json-stream format should be used with 'llvm-cov export'.");
+    return 1;
+  }
+
   if (ViewOpts.Format == CoverageViewOptions::OutputFormat::Lcov) {
     error("lcov format should be used with 'llvm-cov export'.");
     return 1;
@@ -1248,6 +1263,11 @@ int CodeCoverageTool::doReport(int argc, const char **argv,
   if (Err)
     return Err;
 
+  if (ViewOpts.Format == CoverageViewOptions::OutputFormat::JsonStream) {
+    error("json-stream format should be used with 'llvm-cov export'.");
+    return 1;
+  }
+
   if (ViewOpts.Format == CoverageViewOptions::OutputFormat::HTML) {
     error("HTML output for summary reports is not yet supported.");
     return 1;
@@ -1317,9 +1337,10 @@ int CodeCoverageTool::doExport(int argc, const char **argv,
   ViewOpts.UnifyFunctionInstantiations = UnifyInstantiations;
 
   if (ViewOpts.Format != CoverageViewOptions::OutputFormat::Text &&
-      ViewOpts.Format != CoverageViewOptions::OutputFormat::Lcov) {
-    error("coverage data can only be exported as textual JSON or an "
-          "lcov tracefile.");
+      ViewOpts.Format != CoverageViewOptions::OutputFormat::Lcov &&
+      ViewOpts.Format != CoverageViewOptions::OutputFormat::JsonStream) {
+    error("coverage data can only be exported as textual JSON, streaming JSON "
+          "or an lcov tracefile.");
     return 1;
   }
 
@@ -1343,6 +1364,10 @@ int CodeCoverageTool::doExport(int argc, const char **argv,
   case CoverageViewOptions::OutputFormat::Text:
     Exporter =
         std::make_unique<CoverageExporterJson>(*Coverage, ViewOpts, outs());
+    break;
+  case CoverageViewOptions::OutputFormat::JsonStream:
+    Exporter = std::make_unique<CoverageExporterJsonStream>(*Coverage, ViewOpts,
+                                                            outs());
     break;
   case CoverageViewOptions::OutputFormat::HTML:
     // Unreachable because we should have gracefully terminated with an error
